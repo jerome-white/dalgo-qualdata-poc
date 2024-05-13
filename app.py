@@ -129,7 +129,8 @@ class FormWidget(DropdownWidget):
     _column = 'forms'
 
     def __init__(self, db):
-        super().__init__(db, 'interaction')
+        super().__init__(db, 'activity')
+
         self.ftypes_fwd = {
             'cc': 'Coaching call',
             'cro': 'Classroom observation',
