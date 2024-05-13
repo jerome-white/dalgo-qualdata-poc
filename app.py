@@ -82,7 +82,7 @@ class Widget:
 
 class DropdownWidget(Widget):
     def __init__(self, db, name, multiselect=True):
-        super().__init__(db, 'location')
+        super().__init__(db, name)
         self.multiselect = multiselect
 
     def build(self):
@@ -129,22 +129,31 @@ class FormWidget(DropdownWidget):
     _column = 'forms'
 
     def __init__(self, db):
-        super().__init__(db, 'form')
+        super().__init__(db, 'interaction')
+        self.ftypes_fwd = {
+            'cc': 'Coaching call',
+            'cro': 'Classroom observation',
+        }
+        self.ftypes_rev = { y: x for (x, y) in self.ftypes_fwd.items() }
 
     def options(self):
-        sql = f'''
-        SELECT DISTINCT {self._column}
-        FROM {self.db._table}
-        WHERE {self._column} IS NOT NULL
-        '''
+        sql = '''
+        SELECT DISTINCT {1}
+        FROM {0}
+        WHERE {1} IN ({2})
+        '''.format(
+            self.db._table,
+            self._column,
+            ','.join(map("'{}'".format, self.ftypes_fwd)),
+        )
 
         for i in db.query(sql):
-            yield i.forms
+            yield self.ftypes_fwd[i.forms]
 
     def refine(self, values):
         return '{} IN ({})'.format(
             self._column,
-            ', '.join(map("'{}'".format, values)),
+            ', '.join("'{}'".format(self.ftypes_rev[x]) for x in values),
         )
 
 class SummaryWidget(DropdownWidget):
