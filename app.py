@@ -205,7 +205,10 @@ class Orchestrator:
         SELECT DISTINCT remarks_qualitative
         FROM {self.db._table}
         WHERE {where}'''
+
         remarks = (x.remarks_qualitative for x in self.db.query(sql))
+        if not remarks:
+            return 'No remarks to summarize!'
 
         widgets = list(self['llm'])
         n = len(widgets)
