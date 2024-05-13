@@ -1,3 +1,4 @@
+import os
 import logging
 import itertools as it
 from string import Template
@@ -225,7 +226,7 @@ class Orchestrator:
 #
 #
 config = ConfigParser()
-config.read('db.ini')
+config.read(os.getenv('DB_INI_CONFIG'))
 kwargs = config.defaults()
 db = DatabaseManager(**kwargs)
 
