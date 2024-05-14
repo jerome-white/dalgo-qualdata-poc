@@ -74,6 +74,9 @@ class Widget:
         self.db = db
         self.name = name
 
+    def __str__(self):
+        return self.name.title()
+
     def build(self):
         raise NotImplementedError()
 
@@ -87,9 +90,11 @@ class DropdownWidget(Widget):
 
     def build(self):
         choices = list(self.options())
-        return gr.Dropdown(choices=choices,
-                           multiselect=self.multiselect,
-                           label=self.name.title())
+        return gr.Dropdown(
+            choices=choices,
+            multiselect=self.multiselect,
+            label=str(self),
+        )
 
 class LocationWidget(DropdownWidget):
     _columns = (
@@ -177,7 +182,13 @@ class PointsWidget(Widget):
         super().__init__(db, 'number of points')
 
     def build(self):
-        return gr.Slider(value=self._points, minimum=1, maximum=10, step=1)
+        return gr.Slider(
+            value=self._points,
+            label=str(self),
+            minimum=1,
+            maximum=10,
+            step=1,
+        )
 
     def refine(self, values):
         return str(values)
