@@ -272,7 +272,7 @@ kwargs = config.defaults()
 db = DatabaseManager(**kwargs)
 
 orchestrator = Orchestrator(db)
-inputs = [ x.build() for x in fn ]
+inputs = [ x.build() for x in orchestrator ]
 demo = gr.Interface(
     fn=fn(orchestrator),
     inputs=inputs,
