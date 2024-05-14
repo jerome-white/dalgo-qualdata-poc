@@ -30,6 +30,9 @@ class ChatInterface:
 
     def __call__(self, remarks, analysis, points):
         rmk = '\n'.join(it.starmap('Remark {}: {}'.format, enumerate(remarks)))
+        if not rmk:
+            raise ValueError('No remarks to consider!')
+
         user_prompt = self.user_prompt.substitute(
             remarks=rmk,
             analysis=analysis,
@@ -233,9 +236,6 @@ class Orchestrator:
         WHERE {where}'''
 
         remarks = (x.remarks_qualitative for x in self.db.query(sql))
-        if not remarks:
-            return 'No remarks to summarize!'
-
         widgets = list(self['llm'])
         n = len(widgets)
         (summary, points) = (x.refine(y) for (x, y) in zip(widgets, args[-n:]))
