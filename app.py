@@ -277,7 +277,7 @@ demo = gr.Interface(
     fn=fn(orchestrator),
     inputs=inputs,
     outputs=[
-        gr.Textbox(),
+        gr.Textbox(label='LLM response'),
     ],
     allow_flagging='never',
 )
