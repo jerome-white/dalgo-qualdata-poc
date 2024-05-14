@@ -75,7 +75,7 @@ class Widget:
         self.name = name
 
     def __str__(self):
-        return self.name.title()
+        return self.name.capitalize()
 
     def build(self):
         raise NotImplementedError()
