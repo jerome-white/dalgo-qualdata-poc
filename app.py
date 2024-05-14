@@ -48,10 +48,15 @@ class ChatInterface:
                     'content': user_prompt,
                 },
             ],
+            stream=True
         )
-        (message, ) = response.choices
 
-        return message.message.content
+        incoming = []
+        for r in response:
+            (i, ) = r.choices
+            if i.delta.content is not None:
+                incoming.append(i.delta.content)
+                yield ''.join(incoming)
 
 #
 #
@@ -235,7 +240,7 @@ class Orchestrator:
         n = len(widgets)
         (summary, points) = (x.refine(y) for (x, y) in zip(widgets, args[-n:]))
 
-        return self.chat(remarks, summary, points)
+        yield from self.chat(remarks, summary, points)
 
     def __iter__(self):
         for i in self.widgets:
@@ -246,6 +251,18 @@ class Orchestrator:
             if i.wtype == item:
                 yield i.widget
 
+    @classmethod
+    def conduct(cls, *args):
+        yield from cls(*args)
+
+# Gradio is not okay with an object that's a yielding callable. This
+# function wraps that away so it is happy.
+def fn(orchestrator):
+    def handler(*args):
+        yield from orchestrator(*args)
+
+    return handler
+
 #
 #
 #
@@ -254,10 +271,10 @@ config.read(os.getenv('DB_INI_CONFIG'))
 kwargs = config.defaults()
 db = DatabaseManager(**kwargs)
 
-fn = Orchestrator(db)
+orchestrator = Orchestrator(db)
 inputs = [ x.build() for x in fn ]
 demo = gr.Interface(
-    fn=fn,
+    fn=fn(orchestrator),
     inputs=inputs,
     outputs=[
         gr.Textbox(),
