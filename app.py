@@ -37,15 +37,15 @@ class ChatInterface:
         )
         logging.critical(user_prompt)
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model='gpt-3.5-turbo',
             messages=[
                 {
-                    "role": "system",
-                    "content": self.system_prompt,
+                    'role': 'system',
+                    'content': self.system_prompt,
                 },
                 {
-                    "role": "user",
-                    "content": user_prompt,
+                    'role': 'user',
+                    'content': user_prompt,
                 },
             ],
         )
