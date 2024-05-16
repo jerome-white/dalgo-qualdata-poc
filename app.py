@@ -13,15 +13,17 @@ from openai import OpenAI
 #
 #
 #
-class ChatInterface:
+class ChatManager:
     _prompt_root = Path('prompts')
     _prompts = (
         'system',
         'user',
     )
 
-    def __init__(self):
-        self.client = OpenAI()
+    def __init__(self, config):
+        kwargs = dict(config['OPEN_AI'])
+        self.client = OpenAI(**kwargs)
+
         (system, user) = (
             self._prompt_root.joinpath(x).read_text() for x in self._prompts
         )
@@ -66,13 +68,14 @@ class ChatInterface:
 #
 class DatabaseManager:
     _table = 'prod.classroom_surveys_normalized'
+    _remote = 'postgresql://{user}:{password}@{host}?dbname={dbname}'
 
-    def __init__(self, host, dbname, user, password):
-        self.con = f'postgresql://{user}:{password}@{host}?dbname={dbname}'
+    def __init__(self, config):
+        kwargs = dict(config['DALGO'])
+        self.con = self._remote.format(**kwargs)
 
     def query(self, sql):
         yield from pd.read_sql_query(sql, con=self.con).itertuples(index=False)
-
 
 #
 #
@@ -220,9 +223,9 @@ class Orchestrator:
         ('llm', PointsWidget),
     )
 
-    def __init__(self, db):
+    def __init__(self, db, chat):
         self.db = db
-        self.chat = ChatInterface()
+        self.chat = chat
         self.widgets = [
             WidgetHolder(x, y(self.db)) for (x, y) in self._widgets
         ]
@@ -267,11 +270,11 @@ def fn(orchestrator):
 #
 #
 config = ConfigParser()
-config.read(os.getenv('DB_INI_CONFIG'))
-kwargs = config.defaults()
-db = DatabaseManager(**kwargs)
+config.read(os.getenv('QS_CONFIG'))
 
-orchestrator = Orchestrator(db)
+managers = (x(config) for x in (DatabaseManager, ChatManager))
+orchestrator = Orchestrator(*managers)
+
 inputs = [ x.build() for x in orchestrator ]
 demo = gr.Interface(
     fn=fn(orchestrator),
