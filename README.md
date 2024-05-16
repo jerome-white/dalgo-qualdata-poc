@@ -2,10 +2,9 @@
 
 # To run
 
-First, fill `db.ini` with the relevant values for your database. Then:
+First, fill `config.ini` with your Open AI and database
+credentials. Then:
 
 ```bash
-$> export OPENAI_API_KEY=abc-...
-$> export DB_INI_CONFIG=db.ini
-$> gradio app.py
+$> QS_CONFIG=config.ini gradio app.py
 ```
