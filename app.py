@@ -161,7 +161,7 @@ class FormWidget(DropdownWidget):
             ','.join(map("'{}'".format, self.ftypes_fwd)),
         )
 
-        for i in db.query(sql):
+        for i in self.db.query(sql):
             yield self.ftypes_fwd[i.forms]
 
     def refine(self, values):
