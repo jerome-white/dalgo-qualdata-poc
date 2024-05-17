@@ -146,36 +146,32 @@ class LocationWidget(DropdownWidget):
         return ' OR '.join(map('({})'.format, elements))
 
 class FormWidget(DropdownWidget):
-    _column = 'forms'
+    _column = 'forms_verbose'
+    _focus = set((
+        'coaching call',
+        'classroom observations',
+    ))
 
     def __init__(self, db):
-        super().__init__(db, 'activity')
+        super().__init__(db, 'activity', False)
 
-        self.ftypes_fwd = {
-            'cc': 'Coaching call',
-            'cro': 'Classroom observation',
-        }
-        self.ftypes_rev = { y: x for (x, y) in self.ftypes_fwd.items() }
+    def qstring(self, value, negate=False):
+        yes_no = ' NOT ' if negate else ' '
+        return f"LOWER({self._column}){yes_no}LIKE '{value}%%'"
 
     def options(self):
-        sql = '''
-        SELECT DISTINCT {1}
-        FROM {0}
-        WHERE {1} IN ({2})
-        '''.format(
-            self.db._table,
-            self._column,
-            ','.join(map("'{}'".format, self.ftypes_fwd)),
-        )
-
-        for i in self.db.query(sql):
-            yield self.ftypes_fwd[i.forms]
+        for i in it.chain(self._focus, ['other']):
+            yield i.capitalize()
 
     def refine(self, values):
-        return '{} IN ({})'.format(
-            self._column,
-            ', '.join("'{}'".format(self.ftypes_rev[x]) for x in values),
-        )
+        values = values.lower()
+
+        if values in self._focus:
+            sql = self.qstring(values)
+        else:
+            sql = ' AND '.join(self.qstring(x, True) for x in self._focus)
+
+        return sql
 
 class SummaryWidget(DropdownWidget):
     def __init__(self, db):
@@ -238,11 +234,12 @@ class Orchestrator:
         logging.warning(args)
         where = ' AND '.join(x.refine(y) for (x, y) in zip(self['sql'], args))
         sql = f'''
-        SELECT DISTINCT remarks_qualitative
+        SELECT DISTINCT(TRIM(remarks_qualitative)) AS remark
         FROM {self.db._table}
         WHERE {where}'''
+        logging.critical(' '.join(sql.strip().split()))
 
-        remarks = (x.remarks_qualitative for x in self.db.query(sql))
+        remarks = (x.remark for x in self.db.query(sql))
         widgets = list(self['llm'])
         n = len(widgets)
         (summary, points) = (x.refine(y) for (x, y) in zip(widgets, args[-n:]))
