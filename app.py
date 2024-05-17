@@ -8,7 +8,7 @@ from configparser import ConfigParser
 
 import pandas as pd
 import gradio as gr
-from openai import OpenAI
+from openai import OpenAI, BadRequestError
 
 #
 #
@@ -41,20 +41,24 @@ class ChatManager:
             points=points,
         )
         logging.critical(user_prompt)
-        response = self.client.chat.completions.create(
-            model='gpt-3.5-turbo',
-            messages=[
-                {
-                    'role': 'system',
-                    'content': self.system_prompt,
-                },
-                {
-                    'role': 'user',
-                    'content': user_prompt,
-                },
-            ],
-            stream=True
-        )
+
+        try:
+            response = self.client.chat.completions.create(
+                model='gpt-3.5-turbo',
+                messages=[
+                    {
+                        'role': 'system',
+                        'content': self.system_prompt,
+                    },
+                    {
+                        'role': 'user',
+                        'content': user_prompt,
+                    },
+                ],
+                stream=True
+            )
+        except BadRequestError as err:
+            raise InterruptedError(f'{err.type}: {err.code}')
 
         incoming = []
         for r in response:
