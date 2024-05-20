@@ -186,6 +186,35 @@ class SummaryWidget(DropdownWidget):
     def refine(self, values):
         return values
 
+class DateWidget(DropdownWidget):
+    _column = 'observation_date'
+
+    def __init__(self, db):
+        super().__init__(db, 'month')
+        self.tmpcol = 'foo'
+
+    def options(self):
+        sql = f'''
+        SELECT DISTINCT TO_CHAR({self._column}, 'YYYY-MM') AS {self.tmpcol}
+        FROM prod.classroom_surveys_normalized
+        WHERE {self._column} <= NOW()
+        ORDER BY {self.tmpcol} DESC
+        '''
+
+        for i in self.db.query(sql):
+            yield getattr(i, self.tmpcol)
+
+    def refine(self, values):
+        sql = []
+        for i in values:
+            date = f'{i}-01'
+            sql.append(' AND '.join([
+                f"{self._column} >= '{date}'",
+                f"{self._column} < date '{date}' + interval '1 month'",
+            ]))
+
+        return '({})'.format(' OR '.join(map('({})'.format, sql)))
+
 class PointsWidget(Widget):
     _points = 3
 
@@ -204,9 +233,6 @@ class PointsWidget(Widget):
     def refine(self, values):
         return str(values)
 
-# class RangeWidget(Widget):
-#     pass
-
 #
 #
 #
@@ -219,6 +245,7 @@ class Orchestrator:
     _widgets = (
         ('sql', LocationWidget),
         ('sql', FormWidget),
+        ('sql', DateWidget),
         ('llm', SummaryWidget),
         ('llm', PointsWidget),
     )
@@ -232,7 +259,8 @@ class Orchestrator:
 
     def __call__(self, *args):
         logging.warning(args)
-        where = ' AND '.join(x.refine(y) for (x, y) in zip(self['sql'], args))
+
+        where = ' AND '.join(self.refine(*args))
         sql = f'''
         SELECT DISTINCT(TRIM(remarks_qualitative)) AS remark
         FROM {self.db._table}
@@ -254,6 +282,11 @@ class Orchestrator:
         for i in self.widgets:
             if i.wtype == item:
                 yield i.widget
+
+    def refine(self, *args):
+        for (i, j) in zip(self['sql'], args):
+            if j:
+                yield i.refine(j)
 
     @classmethod
     def conduct(cls, *args):
