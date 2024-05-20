@@ -13,6 +13,15 @@ from openai import OpenAI, BadRequestError
 #
 #
 #
+logging.basicConfig(
+    format='[ %(asctime)s %(levelname)s %(filename)s ] %(message)s',
+    datefmt='%H:%M:%S',
+    level=os.environ.get('PYTHONLOGLEVEL', 'WARNING').upper(),
+)
+
+#
+#
+#
 class ChatManager:
     _prompt_root = Path('prompts')
     _prompts = (
@@ -40,7 +49,7 @@ class ChatManager:
             analysis=analysis,
             points=points,
         )
-        logging.critical(user_prompt)
+        logging.debug(user_prompt)
 
         try:
             response = self.client.chat.completions.create(
@@ -258,14 +267,14 @@ class Orchestrator:
         ]
 
     def __call__(self, *args):
-        logging.warning(args)
+        logging.info(args)
 
         where = ' AND '.join(self.refine(*args))
         sql = f'''
         SELECT DISTINCT(TRIM(remarks_qualitative)) AS remark
         FROM {self.db._table}
         WHERE {where}'''
-        logging.critical(' '.join(sql.strip().split()))
+        logging.info(' '.join(sql.strip().split()))
 
         remarks = (x.remark for x in self.db.query(sql))
         widgets = list(self['llm'])
