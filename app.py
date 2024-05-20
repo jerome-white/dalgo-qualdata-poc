@@ -232,6 +232,7 @@ class Orchestrator:
 
     def __call__(self, *args):
         logging.warning(args)
+
         where = ' AND '.join(x.refine(y) for (x, y) in zip(self['sql'], args))
         sql = f'''
         SELECT DISTINCT(TRIM(remarks_qualitative)) AS remark
@@ -287,4 +288,13 @@ demo = gr.Interface(
 )
 
 if __name__ == "__main__":
-    demo.queue().launch()
+    gr_options = dict(config['GRADIO'])
+    kwargs = {
+        'share': gr_options.get('share', False),
+    }
+
+    auth = tuple(map(gr_options.get, ('username', 'password')))
+    if all(auth):
+        kwargs['auth'] = auth
+
+    demo.queue().launch(**kwargs)
