@@ -27,10 +27,17 @@ class Display:
         raise NotImplementedError()
 
 class RemarkDisplay(Display):
+    _headers = [
+        'ID',
+        'Remark',
+    ]
+
     def __call__(self, remarks, *args):
-        return (pd
-                .DataFrame(remarks, columns=['Remark'])
-                .reset_index(names='ID'))
+        n = len(remarks) + 1
+        return {
+            'headers': self._headers,
+            'data': list(zip(range(1, n), remarks)),
+        }
 
 class ChatDisplay(Display):
     _model = 'gpt-3.5-turbo'
