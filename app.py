@@ -23,6 +23,7 @@ logging.basicConfig(
 #
 #
 class ChatManager:
+    _model = 'gpt-3.5-turbo'
     _prompt_root = Path('prompts')
     _prompts = (
         'system',
@@ -33,7 +34,7 @@ class ChatManager:
         kwargs = dict(config['OPEN_AI'])
 
         self.client = OpenAI(api_key=kwargs.get('api_key'))
-        self.model = kwargs.get('model', 'gpt-3.5-turbo')
+        self.model = kwargs.get('model', self._model)
         (system, user) = (
             self._prompt_root.joinpath(x).read_text() for x in self._prompts
         )
