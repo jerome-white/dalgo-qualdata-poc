@@ -67,7 +67,7 @@ class ChatDisplay(Display):
 
         user_prompt = self.user_prompt.substitute(
             remarks=rmk,
-            analysis=analysis,
+            analysis=analysis.lower(),
             points=points,
         )
         logging.debug(user_prompt)
@@ -173,41 +173,37 @@ class LocationWidget(DropdownWidget):
 
 class FormWidget(DropdownWidget):
     _column = 'forms_verbose'
-    _focus = set((
-        'coaching call',
-        'classroom observations',
-    ))
 
     def __init__(self, db):
-        super().__init__(db, 'activity', False)
-
-    def qstring(self, value, negate=False):
-        yes_no = ' NOT ' if negate else ' '
-        return f"LOWER({self._column}){yes_no}LIKE '{value}%%'"
+        super().__init__(db, 'activity')
 
     def options(self):
-        for i in it.chain(self._focus, ['other']):
-            yield i.capitalize()
+        sql = f'''
+        SELECT DISTINCT {self._column}
+        FROM prod.classroom_surveys_normalized
+        WHERE {self._column} IS NOT NULL
+        ORDER BY {self._column}
+        '''
+
+        yield from (getattr(x, self._column) for x in self.db.query(sql))
 
     def refine(self, values):
-        values = values.lower()
-
-        if values in self._focus:
-            sql = self.qstring(values)
-        else:
-            sql = ' AND '.join(self.qstring(x, True) for x in self._focus)
-
-        return sql
+        return '{} IN ({})'.format(
+            self._column,
+            ','.join(map("'{}'".format, values)),
+        )
 
 class SummaryWidget(DropdownWidget):
+    _stypes = (
+        'best practices',
+        'areas of improvement',
+    )
+
     def __init__(self, db):
         super().__init__(db, 'type of summary', False)
 
     def options(self):
-        yield from (
-            'best practices',
-            'areas of improvement',
-        )
+        yield from (x.capitalize() for x in self._stypes)
 
     def refine(self, values):
         return values
