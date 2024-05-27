@@ -352,13 +352,5 @@ demo = gr.Interface(
 )
 
 if __name__ == "__main__":
-    gr_options = dict(config['GRADIO'])
-    kwargs = {
-        'share': gr_options.get('share', False),
-    }
-
-    auth = tuple(map(gr_options.get, ('username', 'password')))
-    if all(auth):
-        kwargs['auth'] = auth
-
+    kwargs = dict(config['GRADIO'])
     demo.queue().launch(**kwargs)
