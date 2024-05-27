@@ -22,7 +22,17 @@ logging.basicConfig(
 #
 #
 #
-class ChatManager:
+class Display:
+    def __call__(self, remarks, *args):
+        raise NotImplementedError()
+
+class RemarkDisplay(Display):
+    def __call__(self, remarks, *args):
+        return (pd
+                .DataFrame(remarks, columns=['Remark'])
+                .reset_index(names='ID'))
+
+class ChatDisplay(Display):
     _model = 'gpt-3.5-turbo'
     _prompt_root = Path('prompts')
     _prompts = (
@@ -41,7 +51,9 @@ class ChatManager:
         self.system_prompt = system
         self.user_prompt = Template(user)
 
-    def __call__(self, remarks, analysis, points):
+    def __call__(self, remarks, *args):
+        (analysis, points) = args
+
         rmk = '\n'.join(it.starmap('Remark {}: {}'.format, enumerate(remarks)))
         if not rmk:
             raise ValueError('No remarks to consider!')
@@ -56,7 +68,6 @@ class ChatManager:
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                stream=True,
                 temperature=0.2,
                 messages=[
                     {
@@ -72,12 +83,8 @@ class ChatManager:
         except BadRequestError as err:
             raise InterruptedError(f'{err.type}: {err.code}')
 
-        incoming = []
-        for r in response:
-            (i, ) = r.choices
-            if i.delta.content is not None:
-                incoming.append(i.delta.content)
-                yield ''.join(incoming)
+        (message, ) = response.choices
+        return message.message.content
 
 #
 #
@@ -262,12 +269,14 @@ class Orchestrator:
         ('llm', PointsWidget),
     )
 
-    def __init__(self, db, chat):
+    def __init__(self, db, chat, remark):
         self.db = db
         self.chat = chat
+        self.remark = remark
         self.widgets = [
             WidgetHolder(x, y(self.db)) for (x, y) in self._widgets
         ]
+
 
     def __call__(self, *args):
         logging.info(args)
@@ -279,12 +288,15 @@ class Orchestrator:
         WHERE {where}'''
         logging.info(' '.join(sql.strip().split()))
 
-        remarks = (x.remark for x in self.db.query(sql))
+        remarks = [ x.remark for x in self.db.query(sql) ]
         widgets = list(self['llm'])
         n = len(widgets)
         (summary, points) = (x.refine(y) for (x, y) in zip(widgets, args[-n:]))
 
-        yield from self.chat(remarks, summary, points)
+        return (
+            self.chat(remarks, summary, points),
+            self.remark(remarks),
+        )
 
     def __iter__(self):
         for i in self.widgets:
@@ -304,29 +316,32 @@ class Orchestrator:
     def conduct(cls, *args):
         yield from cls(*args)
 
-# Gradio is not okay with an object that's a yielding callable. This
-# function wraps that away so it is happy.
-def fn(orchestrator):
-    def handler(*args):
-        yield from orchestrator(*args)
-
-    return handler
-
 #
 #
 #
 config = ConfigParser()
 config.read(os.getenv('QS_CONFIG'))
 
-managers = (x(config) for x in (DatabaseManager, ChatManager))
-orchestrator = Orchestrator(*managers)
+orchestrator = Orchestrator(
+    db=DatabaseManager(config),
+    chat=ChatDisplay(config),
+    remark=RemarkDisplay(),
+)
 
 inputs = [ x.build() for x in orchestrator ]
 demo = gr.Interface(
-    fn=fn(orchestrator),
+    fn=orchestrator,
     inputs=inputs,
     outputs=[
-        gr.Textbox(label='LLM response'),
+        gr.Textbox(
+            label='LLM summary',
+        ),
+        gr.Dataframe(
+            label='Remarks on which the summary is based',
+            height=600,
+            render=False,
+            wrap=True,
+        ),
     ],
     allow_flagging='never',
 )
