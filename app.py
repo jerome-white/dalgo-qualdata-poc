@@ -112,8 +112,11 @@ class Widget:
         self.db = db
         self.name = name
 
+    def __repr__(self):
+        return self.name
+
     def __str__(self):
-        return self.name.capitalize()
+        return repr(self).capitalize()
 
     def build(self):
         raise NotImplementedError()
@@ -168,27 +171,34 @@ class LocationWidget(DropdownWidget):
 
         return ' OR '.join(map('({})'.format, elements))
 
-class FormWidget(DropdownWidget):
-    _column = 'forms_verbose_consolidated'
-
-    def __init__(self, db):
-        super().__init__(db, 'activity')
+class StandardSelectionWidget(DropdownWidget):
+    def __init__(self, db, name, column=None, multiselect=True):
+        super().__init__(db, name, multiselect)
+        self.column = column or self.name
 
     def options(self):
         sql = f'''
-        SELECT DISTINCT {self._column}
+        SELECT DISTINCT {self.column}
         FROM prod.classroom_surveys_normalized
-        WHERE {self._column} IS NOT NULL
-        ORDER BY {self._column}
+        WHERE {self.column} IS NOT NULL
+        ORDER BY {self.column}
         '''
 
-        yield from (getattr(x, self._column) for x in self.db.query(sql))
+        yield from (getattr(x, self.column) for x in self.db.query(sql))
 
     def refine(self, values):
         return '{} IN ({})'.format(
-            self._column,
+            self.column,
             ','.join(map("'{}'".format, values)),
         )
+
+class FormWidget(StandardSelectionWidget):
+    def __init__(self, db):
+        super().__init__(db, 'activity', 'forms_verbose_consolidated')
+
+class ProgramWidget(StandardSelectionWidget):
+    def __init__(self, db):
+        super().__init__(db, 'program')
 
 class SummaryWidget(DropdownWidget):
     _stypes = (
@@ -264,6 +274,7 @@ class Orchestrator:
     _widgets = (
         ('sql', LocationWidget),
         ('sql', FormWidget),
+        ('sql', ProgramWidget),
         ('sql', DateWidget),
         ('llm', SummaryWidget),
         ('llm', PointsWidget),
