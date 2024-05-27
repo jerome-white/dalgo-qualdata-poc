@@ -31,8 +31,9 @@ class ChatManager:
 
     def __init__(self, config):
         kwargs = dict(config['OPEN_AI'])
-        self.client = OpenAI(**kwargs)
 
+        self.client = OpenAI(api_key=kwargs.get('api_key'))
+        self.model = kwargs.get('model', 'gpt-3.5-turbo')
         (system, user) = (
             self._prompt_root.joinpath(x).read_text() for x in self._prompts
         )
@@ -53,7 +54,9 @@ class ChatManager:
 
         try:
             response = self.client.chat.completions.create(
-                model='gpt-3.5-turbo',
+                model=self.model,
+                stream=True,
+                temperature=0.2,
                 messages=[
                     {
                         'role': 'system',
@@ -64,7 +67,6 @@ class ChatManager:
                         'content': user_prompt,
                     },
                 ],
-                stream=True
             )
         except BadRequestError as err:
             raise InterruptedError(f'{err.type}: {err.code}')
