@@ -320,7 +320,7 @@ class Orchestrator:
 #
 #
 qs_config = Path(os.getenv('QS_CONFIG'))
-config = json.load(qs_config.read_text())
+config = json.loads(qs_config.read_text())
 
 orchestrator = Orchestrator(
     db=DatabaseManager(**config['dalgo']),
