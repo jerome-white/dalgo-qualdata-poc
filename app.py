@@ -342,15 +342,17 @@ demo = gr.Interface(
     outputs=[
         gr.Textbox(
             label='LLM summary',
+            show_copy_button=True,
+            elem_classes='response',
         ),
         gr.Dataframe(
             label='Remarks on which the summary is based',
-            height=600,
             render=False,
             wrap=True,
         ),
     ],
     allow_flagging='never',
+    css=Path('style.css'),
 )
 
 if __name__ == "__main__":
