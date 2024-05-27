@@ -1,10 +1,10 @@
 import os
+import json
 import logging
 import itertools as it
 from string import Template
 from pathlib import Path
 from dataclasses import dataclass
-from configparser import ConfigParser
 
 import pandas as pd
 import gradio as gr
@@ -47,9 +47,7 @@ class ChatDisplay(Display):
         'user',
     )
 
-    def __init__(self, config):
-        kwargs = dict(config['OPEN_AI'])
-
+    def __init__(self, **kwargs):
         self.client = OpenAI(api_key=kwargs.get('api_key'))
         self.model = kwargs.get('model', self._model)
         (system, user) = (
@@ -100,8 +98,7 @@ class DatabaseManager:
     _table = 'prod.classroom_surveys_normalized'
     _remote = 'postgresql://{user}:{password}@{host}?dbname={dbname}'
 
-    def __init__(self, config):
-        kwargs = dict(config['DALGO'])
+    def __init__(self, **kwargs):
         self.con = self._remote.format(**kwargs)
 
     def query(self, sql):
@@ -322,12 +319,12 @@ class Orchestrator:
 #
 #
 #
-config = ConfigParser()
-config.read(os.getenv('QS_CONFIG'))
+qs_config = Path(os.getenv('QS_CONFIG'))
+config = json.load(qs_config.read_text())
 
 orchestrator = Orchestrator(
-    db=DatabaseManager(config),
-    chat=ChatDisplay(config),
+    db=DatabaseManager(**config['dalgo']),
+    chat=ChatDisplay(**config['open_ai']),
     remark=RemarkDisplay(),
 )
 
@@ -352,5 +349,4 @@ demo = gr.Interface(
 )
 
 if __name__ == "__main__":
-    kwargs = dict(config['GRADIO'])
-    demo.queue().launch(**kwargs)
+    demo.queue().launch(**config['gradio'])
