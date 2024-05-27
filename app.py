@@ -75,7 +75,7 @@ class ChatDisplay(Display):
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
-                temperature=0.2,
+                temperature=1e-6,
                 messages=[
                     {
                         'role': 'system',
