@@ -169,7 +169,7 @@ class LocationWidget(DropdownWidget):
         return ' OR '.join(map('({})'.format, elements))
 
 class FormWidget(DropdownWidget):
-    _column = 'forms_verbose'
+    _column = 'forms_verbose_consolidated'
 
     def __init__(self, db):
         super().__init__(db, 'activity')
