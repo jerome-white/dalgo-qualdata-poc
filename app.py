@@ -102,6 +102,7 @@ class DatabaseManager:
         self.con = self._remote.format(**kwargs)
 
     def query(self, sql):
+        logging.debug(' '.join(sql.strip().split()))
         yield from pd.read_sql_query(sql, con=self.con).itertuples(index=False)
 
 #
@@ -297,7 +298,6 @@ class Orchestrator:
         SELECT DISTINCT(TRIM(remarks_qualitative)) AS remark
         FROM {self.db._table}
         WHERE {where}'''
-        logging.info(' '.join(sql.strip().split()))
 
         remarks = [ x.remark for x in self.db.query(sql) ]
         widgets = list(self['llm'])
