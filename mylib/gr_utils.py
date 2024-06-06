@@ -1,8 +1,8 @@
 import json
 import functools as ft
 from pathlib import Path
-from tempfile import mkdtemp
 from datetime import datetime
+from tempfile import NamedTemporaryFile
 
 import gradio as gr
 
@@ -18,6 +18,11 @@ class JSONLogger(gr.FlaggingCallback):
         }
         record.update(zip(self.components, flag_data))
 
-        parent = Path(mkdtemp(dir=self.flagging_dir))
-        with parent.joinpath('record').open('w') as fp:
+        with NamedTemporaryFile(
+                mode='w',
+                suffix='.json',
+                prefix='',
+                dir=self.flagging_dir,
+                delete=False,
+        ) as fp:
             print(json.dumps(record, indent=2), file=fp)
