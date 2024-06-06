@@ -360,4 +360,5 @@ demo = gr.Interface(
 )
 
 if __name__ == "__main__":
-    demo.queue().launch(**config['gradio'])
+    kwargs = config.get('gradio') or {}
+    demo.queue().launch(**kwargs)
