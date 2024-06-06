@@ -10,6 +10,7 @@ class JSONLogger(gr.FlaggingCallback):
     def setup(self, components, flagging_dir):
         self.components = [ x.label for x in components ]
         self.flagging_dir = Path(flagging_dir)
+        self.flagging_dir.mkdir(parents=True, exist_ok=True)
 
     def flag(self, flag_data, flag_option, username):
         record = {
