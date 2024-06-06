@@ -58,6 +58,8 @@ class ChatDisplay(Display):
 
     def __call__(self, remarks, *args):
         (analysis, points) = args
+        if not analysis:
+            raise ValueError('No summary type selected')
 
         rmk = '\n'.join(it.starmap('Remark {}: {}'.format, enumerate(remarks)))
         if not rmk:
