@@ -304,10 +304,18 @@ class Orchestrator:
         n = len(widgets)
         (summary, points) = (x.refine(y) for (x, y) in zip(widgets, args[-n:]))
 
-        return (
-            self.chat(remarks, summary, points),
-            self.remark(remarks),
-        )
+        try:
+            output = (
+                self.chat(remarks, summary, points),
+                self.remark(remarks),
+            )
+        except (ValueError, InterruptedError) as err:
+            output = (
+                str(err),
+                None,
+            )
+
+        return output
 
     def __iter__(self):
         for i in self.widgets:
