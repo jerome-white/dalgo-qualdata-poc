@@ -139,7 +139,7 @@ demo = gr.Interface(
     css=Path('style.css'),
     allow_flagging='manual',
     flagging_options=[
-        'inaccurate output',
+        'inaccurate',
         # 'incoherent output',
     ],
     flagging_dir='flagged',
