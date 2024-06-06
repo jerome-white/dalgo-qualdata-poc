@@ -10,16 +10,7 @@ import pandas as pd
 import gradio as gr
 from openai import OpenAI, BadRequestError
 
-from mylib import JSONLogger
-
-#
-#
-#
-logging.basicConfig(
-    format='[ %(asctime)s %(levelname)s %(filename)s ] %(message)s',
-    datefmt='%H:%M:%S',
-    level=os.environ.get('PYTHONLOGLEVEL', 'WARNING').upper(),
-)
+from mylib import JSONLogger, Logger
 
 #
 #
@@ -72,7 +63,7 @@ class ChatDisplay(Display):
             analysis=analysis.lower(),
             points=points,
         )
-        logging.debug(user_prompt)
+        Logger.debug(user_prompt)
 
         try:
             response = self.client.chat.completions.create(
@@ -106,7 +97,7 @@ class DatabaseManager:
         self.con = self._remote.format(**kwargs)
 
     def query(self, sql):
-        logging.debug(' '.join(sql.strip().split()))
+        Logger.debug(' '.join(sql.strip().split()))
         yield from (pd
                     .read_sql_query(sql, con=self.con)
                     .itertuples(index=False))
@@ -297,7 +288,7 @@ class Orchestrator:
 
 
     def __call__(self, *args):
-        logging.info(args)
+        Logger.info(args)
 
         where = ' AND '.join(self.refine(*args))
         sql = f'''
