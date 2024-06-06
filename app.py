@@ -105,7 +105,9 @@ class DatabaseManager:
 
     def query(self, sql):
         logging.debug(' '.join(sql.strip().split()))
-        yield from pd.read_sql_query(sql, con=self.con).itertuples(index=False)
+        yield from (pd
+                    .read_sql_query(sql, con=self.con)
+                    .itertuples(index=False))
 
 #
 #
