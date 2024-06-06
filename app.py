@@ -10,6 +10,8 @@ import pandas as pd
 import gradio as gr
 from openai import OpenAI, BadRequestError
 
+from mylib import JSONLogger
+
 #
 #
 #
@@ -367,8 +369,13 @@ demo = gr.Interface(
             wrap=True,
         ),
     ],
-    allow_flagging='never',
     css=Path('style.css'),
+    allow_flagging='manual',
+    flagging_options=[
+        'Incorrect output',
+    ],
+    flagging_dir='flagged',
+    flagging_callback=JSONLogger(),
 )
 
 if __name__ == "__main__":
