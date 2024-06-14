@@ -6,7 +6,7 @@ import logging
 #
 logging.basicConfig(
     format='[ %(asctime)s %(levelname)s %(filename)s ] %(message)s',
-    datefmt='%H:%M:%S',
+    datefmt='%c',
     level=os.environ.get('PYTHONLOGLEVEL', 'WARNING').upper(),
 )
 logging.captureWarnings(True)
