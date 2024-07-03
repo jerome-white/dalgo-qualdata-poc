@@ -62,15 +62,16 @@ class Orchestrator:
             WidgetHolder(x, y(self.db)) for (x, y) in self._widgets
         ]
 
-
     def __call__(self, *args):
         Logger.info(args)
 
         where = ' AND '.join(self.refine(*args))
+        if where:
+            where = f'WHERE {where}'
         sql = f'''
         SELECT DISTINCT(TRIM(remarks_qualitative)) AS remark
         FROM {self.db._table}
-        WHERE {where}'''
+        {where}'''
 
         remarks = [ x.remark for x in self.db.query(sql) ]
         widgets = list(self['llm'])
@@ -102,7 +103,9 @@ class Orchestrator:
     def refine(self, *args):
         for (i, j) in zip(self['sql'], args):
             if j:
-                yield i.refine(j)
+                result = i.refine(j).strip()
+                if result:
+                    yield result
 
     @classmethod
     def conduct(cls, *args):
